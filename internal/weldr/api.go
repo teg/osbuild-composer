@@ -646,7 +646,7 @@ func (api *API) composeTypesHandler(writer http.ResponseWriter, request *http.Re
 		Types []composeType `json:"types"`
 	}
 
-	reply.Types = append(reply.Types, composeType{"tar", true})
+	reply.Types = append(append(reply.Types, composeType{"tar", true}), composeType{"qcow2", true})
 
 	json.NewEncoder(writer).Encode(reply)
 }

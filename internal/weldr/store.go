@@ -223,8 +223,74 @@ func (s *store) addCompose(composeID uuid.UUID, bp *blueprint, composeType strin
 	}
 }
 
-func (b *blueprint) translateToPipeline(outputFormat string) *pipeline.Pipeline {
+func getF30Repository() *pipeline.DNFRepository {
+	repo := pipeline.NewDNFRepository("https://mirrors.fedoraproject.org/metalink?repo=fedora-$releasever&arch=$basearch", "", "")
+	repo.SetChecksum("sha256:9f596e18f585bee30ac41c11fb11a83ed6b11d5b341c1cb56ca4015d7717cb97")
+	repo.SetGPGKey("F1D8 EC98 F241 AAF2 0DF6  9420 EF3C 111F CFC6 59B9")
+	return repo
+}
+
+func getF30BuildPipeline() *pipeline.Pipeline {
 	p := &pipeline.Pipeline{}
+	options := pipeline.NewDNFStageOptions("30", "x86_64")
+	options.AddRepository("fedora", getF30Repository())
+	options.AddPackage("dnf")
+	options.AddPackage("e2fsprogs")
+	options.AddPackage("policycoreutils")
+	options.AddPackage("qemu-img")
+	options.AddPackage("systemd")
+	p.AddStage(pipeline.NewDNFStage(options))
+	return p
+}
+
+func getF30Pipeline() *pipeline.Pipeline {
+	p := &pipeline.Pipeline{}
+	p.SetBuildPipeline(getF30BuildPipeline())
+	options := pipeline.NewDNFStageOptions("30", "x86_64")
+	options.AddRepository("fedora", getF30Repository())
+	options.AddPackage("@Core")
+	options.AddPackage("kernel")
+	options.AddPackage("selinux-policy-targeted")
+	options.AddPackage("grub2-pc")
+	p.AddStage(pipeline.NewDNFStage(options))
+	p.AddStage(pipeline.NewFixBLSStage())
+	p.AddStage(pipeline.NewLocaleStage(pipeline.NewLocaleStageOptions("en_US")))
+	return p
+}
+
+func (b *blueprint) translateToTarPipeline() *pipeline.Pipeline {
+	p := getF30Pipeline()
+	p.AddStage(pipeline.NewSELinuxStage(pipeline.NewSELinuxStageOptions("etc/selinux/targeted/contexts/files/file_contexts")))
 	p.SetAssembler(pipeline.NewTarAssembler(pipeline.NewTarAssemblerOptions("image.tar")))
 	return p
+}
+
+func (b *blueprint) translateToQCOW2Pipeline() *pipeline.Pipeline {
+	p := getF30Pipeline()
+	id, err := uuid.Parse("c57ecd2f-5c84-43ac-a541-5fb488e7960c")
+	if err != nil {
+		panic("invalid UUID")
+	}
+	fstabOptions := &pipeline.FSTabStageOptions{}
+	fstabOptions.AddFilesystem(id, "ext4", "/", "", 1, 1)
+	p.AddStage(pipeline.NewFSTabStage(fstabOptions))
+	p.AddStage(pipeline.NewGRUB2Stage(pipeline.NewGRUB2StageOptions(id)))
+	p.AddStage(pipeline.NewSELinuxStage(pipeline.NewSELinuxStageOptions("etc/selinux/targeted/contexts/files/file_contexts")))
+	assemblerOptions := pipeline.NewQCOW2AssemblerOptions(
+		"image.qcow2",
+		id,
+		3221225472)
+	p.SetAssembler(pipeline.NewQCOW2Assembler(assemblerOptions))
+	return p
+}
+
+func (b *blueprint) translateToPipeline(outputFormat string) *pipeline.Pipeline {
+	switch outputFormat {
+	case "tar":
+		return b.translateToTarPipeline()
+	case "qcow2":
+		return b.translateToQCOW2Pipeline()
+	default:
+		panic("invalid output format")
+	}
 }
