@@ -44,12 +44,12 @@ type DistroRegister struct {
 	distros map[string]Distro
 }
 
-func NewDistroRegister() *DistroRegister {
+func NewDistroRegister(confPaths []string) *DistroRegister {
 	distros := &DistroRegister{
 		distros: make(map[string]Distro),
 	}
-	distros.register(fedora30.New())
-	distros.register(rhel82.New())
+	distros.register(fedora30.New(confPaths))
+	distros.register(rhel82.New(confPaths))
 	return distros
 }
 

@@ -49,7 +49,7 @@ func main() {
 	jobListener := listeners[1]
 
 	rpm := rpmmd.NewRPMMD()
-	distros := distro.NewDistroRegister()
+	distros := distro.NewDistroRegister([]string{"/etc/osbuild-composer", "/usr/share/osbuild-composer"})
 
 	distribution, err := distros.FromHost()
 	if err != nil {
