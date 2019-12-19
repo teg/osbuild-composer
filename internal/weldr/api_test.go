@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/osbuild/osbuild-composer/internal/blueprint"
-	"github.com/osbuild/osbuild-composer/internal/distro"
 	_ "github.com/osbuild/osbuild-composer/internal/distro/test"
+	test_distro "github.com/osbuild/osbuild-composer/internal/distro/test"
 	rpmmd_mock "github.com/osbuild/osbuild-composer/internal/mocks/rpmmd"
 	"github.com/osbuild/osbuild-composer/internal/store"
 	"github.com/osbuild/osbuild-composer/internal/target"
@@ -29,7 +29,7 @@ import (
 func createWeldrAPI(fixtureGenerator rpmmd_mock.FixtureGenerator) (*weldr.API, *store.Store) {
 	fixture := fixtureGenerator()
 	rpm := rpmmd_mock.NewRPMMDMock(fixture)
-	d := distro.New("test")
+	d := test_distro.New()
 
 	return weldr.New(rpm, "x86_64", d, nil, fixture.Store), fixture.Store
 }
@@ -622,8 +622,8 @@ func TestSourcesInfo(t *testing.T) {
 
 	api, _ := createWeldrAPI(rpmmd_mock.BaseFixture)
 	test.SendHTTP(api, true, "POST", "/api/v0/projects/source/new", sourceStr)
-	test.TestRoute(t, api, true, "GET", "/api/v0/projects/source/info/fish", ``, 200, `{"sources":{"fish":` + sourceStr + `},"errors":[]}`)
-	test.TestRoute(t, api, true, "GET", "/api/v0/projects/source/info/fish?format=json", ``, 200, `{"sources":{"fish":` + sourceStr + `},"errors":[]}`)
+	test.TestRoute(t, api, true, "GET", "/api/v0/projects/source/info/fish", ``, 200, `{"sources":{"fish":`+sourceStr+`},"errors":[]}`)
+	test.TestRoute(t, api, true, "GET", "/api/v0/projects/source/info/fish?format=json", ``, 200, `{"sources":{"fish":`+sourceStr+`},"errors":[]}`)
 	test.TestRoute(t, api, true, "GET", "/api/v0/projects/source/info/fish?format=son", ``, 400, `{"status":false,"errors":[{"id":"InvalidChars","msg":"invalid format parameter: son"}]}`)
 }
 
