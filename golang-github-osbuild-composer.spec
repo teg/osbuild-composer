@@ -41,16 +41,21 @@ install -m 0755 -vd $(dirname $GO_BUILD_PATH/src/%{goipath})
 ln -fs $PWD $GO_BUILD_PATH/src/%{goipath}
 cd $GO_BUILD_PATH/src/%{goipath}
 install -m 0755 -vd _bin
+install -m 0755 -vd _tests
 export PATH=$PWD/_bin${PATH:+:$PATH}
 export GOPATH=$GO_BUILD_PATH:%{gopath}
 export GOFLAGS=-mod=vendor
 %gobuild -o _bin/osbuild-composer %{goipath}/cmd/osbuild-composer
 %gobuild -o _bin/osbuild-worker %{goipath}/cmd/osbuild-worker
+%gobuild -o _tests/osbuild-tests %{goipath}/cmd/osbuild-tests
 
 %install
 install -m 0755 -vd                                         %{buildroot}%{_libexecdir}/osbuild-composer
 install -m 0755 -vp _bin/*                                  %{buildroot}%{_libexecdir}/osbuild-composer/
 install -m 0755 -vp dnf-json                                %{buildroot}%{_libexecdir}/osbuild-composer/
+
+install -m 0755 -vd                                         %{buildroot}%{_libexecdir}/tests/osbuild-composer
+install -m 0755 -vp _tests/*                                %{buildroot}%{_libexecdir}/tests/osbuild-composer/
 
 install -m 0755 -vd                                         %{buildroot}%{_unitdir}
 install -m 0644 -vp distribution/*.{service,socket}         %{buildroot}%{_unitdir}/
@@ -81,3 +86,14 @@ export GOPATH=$PWD/_build:%{gopath}
 %{_unitdir}/*.{service,socket}
 %{_sysusersdir}/osbuild-composer.conf
 
+
+%package tests
+Summary:	Integration tests
+Requires: 	osbuild-composer
+Requires: 	composer-cli
+
+%description tests
+Integration tests to be run on a pristine-dedicated system to test the osbuild-composer package.
+
+%files tests
+%{_libexecdir}/tests/osbuild-composer/osbuild-tests
