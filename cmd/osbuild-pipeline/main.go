@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/osbuild/osbuild-composer/internal/common"
+	"github.com/osbuild/osbuild-composer/internal/osbuild"
 
 	"github.com/osbuild/osbuild-composer/internal/blueprint"
 	"github.com/osbuild/osbuild-composer/internal/distro"
@@ -107,9 +108,19 @@ func main() {
 		panic(err.Error())
 	}
 
-	bytes, err := json.Marshal(pipeline)
+	sources := d.Sources(append(packageSpecs, buildPackageSpecs...))
+
+	manifest := struct {
+		Sources  *osbuild.Sources  `json:"sources"`
+		Pipeline *osbuild.Pipeline `json:"pipeline"`
+	}{
+		Sources:  sources,
+		Pipeline: pipeline,
+	}
+
+	bytes, err := json.Marshal(manifest)
 	if err != nil {
-		panic("could not marshal pipeline into JSON")
+		panic("could not marshal source and pipeline manifest into JSON")
 	}
 
 	os.Stdout.Write(bytes)
