@@ -398,15 +398,9 @@ func (r *Fedora30) Pipeline(b *blueprint.Blueprint, additionalRepos []rpmmd.Repo
 	}
 
 	p := &osbuild.Pipeline{}
-	p.SetBuild(r.buildPipeline(arch, checksums), "org.osbuild.fedora30")
+	p.SetBuild(r.buildPipeline(arch, buildPackageSpecs), "org.osbuild.fedora30")
 
-	packages, excludedPackages, err := r.BasePackages(outputFormat, outputArchitecture)
-	if err != nil {
-		return nil, err
-	}
-	packages = append(packages, b.GetPackages()...)
-
-	p.AddStage(osbuild.NewDNFStage(r.dnfStageOptions(arch, additionalRepos, checksums, packages, excludedPackages)))
+	p.AddStage(osbuild.NewRPMStage(r.rpmStageOptions(arch, additionalRepos, packageSpecs)))
 	p.AddStage(osbuild.NewFixBLSStage())
 
 	// TODO support setting all languages and install corresponding langpack-* package
@@ -470,22 +464,46 @@ func (r *Fedora30) Pipeline(b *blueprint.Blueprint, additionalRepos []rpmmd.Repo
 }
 
 func (r *Fedora30) Sources(packages []rpmmd.PackageSpec) *osbuild.Sources {
-	return &osbuild.Sources{}
+	files := osbuild.FilesSource{
+		URLs: make(map[string]string),
+	}
+	for _, pkg := range packages {
+		files.URLs[pkg.Checksum] = pkg.RemoteLocation
+	}
+	return &osbuild.Sources{
+		"org.osbuild.files": files,
+	}
 }
 
 func (r *Fedora30) Runner() string {
 	return "org.osbuild.fedora30"
 }
 
-func (r *Fedora30) buildPipeline(arch arch, checksums map[string]string) *osbuild.Pipeline {
-	packages, err := r.BuildPackages(arch.Name)
-	if err != nil {
-		panic("impossibly invalid arch")
+func (r *Fedora30) buildPipeline(arch arch, packageSpecs []rpmmd.PackageSpec) *osbuild.Pipeline {
+	p := &osbuild.Pipeline{}
+	p.AddStage(osbuild.NewRPMStage(r.rpmStageOptions(arch, nil, packageSpecs)))
+	return p
+}
+
+func (r *Fedora30) rpmStageOptions(arch arch, additionalRepos []rpmmd.RepoConfig, specs []rpmmd.PackageSpec) *osbuild.RPMStageOptions {
+	var gpgKeys []string
+	repos := append(arch.Repositories, additionalRepos...)
+	for _, repo := range repos {
+		if repo.GPGKey == "" {
+			continue
+		}
+		gpgKeys = append(gpgKeys, repo.GPGKey)
 	}
 
-	p := &osbuild.Pipeline{}
-	p.AddStage(osbuild.NewDNFStage(r.dnfStageOptions(arch, nil, checksums, packages, nil)))
-	return p
+	var packages []string
+	for _, spec := range specs {
+		packages = append(packages, spec.Checksum)
+	}
+
+	return &osbuild.RPMStageOptions{
+		GPGKeys:  gpgKeys,
+		Packages: packages,
+	}
 }
 
 func (r *Fedora30) dnfStageOptions(arch arch, additionalRepos []rpmmd.RepoConfig, checksums map[string]string, packages, excludedPackages []string) *osbuild.DNFStageOptions {
