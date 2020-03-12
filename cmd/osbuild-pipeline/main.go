@@ -23,12 +23,12 @@ type rpmMD struct {
 
 func main() {
 	var imageType string
-	var blueprintArg string
+	var blueprintArg bool
 	var archArg string
 	var distroArg string
 	var rpmmdArg bool
 	flag.StringVar(&imageType, "image-type", "", "image type, e.g. qcow2 or ami")
-	flag.StringVar(&blueprintArg, "blueprint", "", "path to a JSON file containing a blueprint to translate")
+	flag.BoolVar(&blueprintArg, "blueprint", false, "read a blueprint from stdin")
 	flag.StringVar(&archArg, "arch", "", "architecture to create image for, e.g. x86_64")
 	flag.StringVar(&distroArg, "distro", "", "distribution to create, e.g. fedora-30")
 	flag.BoolVar(&rpmmdArg, "rpmmd", false, "output rpmmd struct instead of pipeline manifest")
@@ -50,12 +50,12 @@ func main() {
 	}
 
 	blueprint := &blueprint.Blueprint{}
-	if blueprintArg != "" {
-		file, err := ioutil.ReadFile(blueprintArg)
+	if blueprintArg {
+		file, err := ioutil.ReadAll(os.Stdin)
 		if err != nil {
-			panic("Could not find blueprint: " + err.Error())
+			panic("Could not read blueprint: " + err.Error())
 		}
-		err = json.Unmarshal([]byte(file), &blueprint)
+		err = json.Unmarshal(file, &blueprint)
 		if err != nil {
 			panic("Could not parse blueprint: " + err.Error())
 		}
