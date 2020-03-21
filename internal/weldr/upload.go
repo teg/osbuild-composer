@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/osbuild/osbuild-composer/internal/common"
+	"github.com/osbuild/osbuild-composer/internal/distro"
 
 	"github.com/google/uuid"
 	"github.com/osbuild/osbuild-composer/internal/target"
@@ -118,8 +119,13 @@ func targetsToUploadResponses(targets []*target.Target) []uploadResponse {
 	return uploads
 }
 
-func uploadRequestToTarget(u uploadRequest) (*target.Target, error) {
+func uploadRequestToTarget(u uploadRequest, d distro.Distro, imageType string) (*target.Target, error) {
 	var t target.Target
+
+	filename, _, err := d.FilenameFromType(imageType)
+	if err != nil {
+		return nil, err
+	}
 
 	t.Uuid = uuid.New()
 	t.ImageName = u.ImageName
@@ -130,6 +136,7 @@ func uploadRequestToTarget(u uploadRequest) (*target.Target, error) {
 	case *awsUploadSettings:
 		t.Name = "org.osbuild.aws"
 		t.Options = &target.AWSTargetOptions{
+			Filename:        filename,
 			Region:          options.Region,
 			AccessKeyID:     options.AccessKeyID,
 			SecretAccessKey: options.SecretAccessKey,
@@ -139,6 +146,7 @@ func uploadRequestToTarget(u uploadRequest) (*target.Target, error) {
 	case *azureUploadSettings:
 		t.Name = "org.osbuild.azure"
 		t.Options = &target.AzureTargetOptions{
+			Filename:  filename,
 			Account:   options.Account,
 			AccessKey: options.AccessKey,
 			Container: options.Container,
