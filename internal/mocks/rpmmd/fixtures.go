@@ -2,11 +2,11 @@ package rpmmd_mock
 
 import (
 	"fmt"
-	"github.com/osbuild/osbuild-composer/internal/common"
-	"github.com/osbuild/osbuild-composer/internal/compose"
-	distro_mock "github.com/osbuild/osbuild-composer/internal/mocks/distro"
 	"sort"
 	"time"
+
+	"github.com/osbuild/osbuild-composer/internal/common"
+	"github.com/osbuild/osbuild-composer/internal/compose"
 
 	"github.com/google/uuid"
 	"github.com/osbuild/osbuild-composer/internal/blueprint"
@@ -92,8 +92,7 @@ func createBaseStoreFixture() *store.Store {
 		},
 	}
 
-	r, _ := distro_mock.NewDefaultRegistry()
-	s := store.New(nil, *r)
+	s := store.New(nil)
 
 	s.Blueprints[bName] = b
 	s.Composes = map[uuid.UUID]compose.Compose{
@@ -188,8 +187,7 @@ func createStoreWithoutComposesFixture() *store.Store {
 		Customizations: nil,
 	}
 
-	r, _ := distro_mock.NewDefaultRegistry()
-	s := store.New(nil, *r)
+	s := store.New(nil)
 
 	s.Blueprints[bName] = b
 

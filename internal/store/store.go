@@ -107,7 +107,7 @@ func (e *NoLocalTargetError) Error() string {
 	return e.message
 }
 
-func New(stateDir *string, distroRegistryArg distro.Registry) *Store {
+func New(stateDir *string) *Store {
 	var s Store
 
 	if stateDir != nil {
@@ -141,7 +141,6 @@ func New(stateDir *string, distroRegistryArg distro.Registry) *Store {
 	}
 
 	s.pendingJobs = make(chan Job, 200)
-	s.distroRegistry = distroRegistryArg
 	s.stateDir = stateDir
 
 	if s.Blueprints == nil {
