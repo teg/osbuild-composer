@@ -172,12 +172,12 @@ type composeStatus struct {
 // queued, started, and finished. Assumes that there's only one image in the
 // compose.
 func (api *API) getComposeStatus(compose store.Compose) *composeStatus {
-	jobId := compose.ImageBuild.JobID
+	buildJobID := compose.ImageBuild.BuildJobID
 
 	// backwards compatibility: composes that were around before splitting
 	// the job queue from the store still contain their valid status and
 	// times. Return those here as a fallback.
-	if jobId == uuid.Nil {
+	if buildJobID == uuid.Nil {
 		var state common.ComposeState
 		switch compose.ImageBuild.QueueStatus {
 		case common.IBWaiting:
@@ -199,7 +199,7 @@ func (api *API) getComposeStatus(compose store.Compose) *composeStatus {
 	}
 
 	// is it ok to ignore this error?
-	jobStatus, _ := api.workers.JobStatus(jobId)
+	jobStatus, _ := api.workers.JobStatus(buildJobID)
 	return &composeStatus{
 		State:    jobStatus.State,
 		Queued:   jobStatus.Queued,
@@ -215,7 +215,7 @@ func (api *API) getComposeStatus(compose store.Compose) *composeStatus {
 func (api *API) openImageFile(composeId uuid.UUID, compose store.Compose) (io.Reader, int64, error) {
 	name := compose.ImageBuild.ImageType.Filename()
 
-	reader, size, err := api.workers.JobArtifact(compose.ImageBuild.JobID, name)
+	reader, size, err := api.workers.JobArtifact(compose.ImageBuild.BuildJobID, name)
 	if err != nil {
 		if api.compatOutputDir == "" || err != jobqueue.ErrNotExist {
 			return nil, 0, err
@@ -1819,11 +1819,11 @@ func (api *API) composeHandler(writer http.ResponseWriter, request *http.Request
 		// Create a successful compose
 		err = api.store.PushTestCompose(composeID, manifest, imageType, bp, size, targets, true)
 	} else {
-		var jobId uuid.UUID
+		var buildJobID uuid.UUID
 
-		jobId, err = api.workers.Enqueue(manifest, targets)
+		buildJobID, err = api.workers.Enqueue(manifest, targets)
 		if err == nil {
-			err = api.store.PushCompose(composeID, manifest, imageType, bp, size, targets, jobId)
+			err = api.store.PushCompose(composeID, manifest, imageType, bp, size, targets, buildJobID)
 		}
 	}
 
@@ -1907,7 +1907,7 @@ func (api *API) composeDeleteHandler(writer http.ResponseWriter, request *http.R
 		// have this job — the compat output dir. Ignore errors,
 		// because there's no point of reporting them to the client
 		// after the compose itself has already been deleted.
-		err = api.workers.DeleteArtifacts(compose.ImageBuild.JobID)
+		err = api.workers.DeleteArtifacts(compose.ImageBuild.BuildJobID)
 		if err == jobqueue.ErrNotExist && api.compatOutputDir != "" {
 			_ = os.RemoveAll(path.Join(api.compatOutputDir, id.String()))
 		}
@@ -1960,7 +1960,7 @@ func (api *API) composeCancelHandler(writer http.ResponseWriter, request *http.R
 		return
 	}
 
-	err = api.workers.Cancel(compose.ImageBuild.JobID)
+	err = api.workers.Cancel(compose.ImageBuild.BuildJobID)
 	if err != nil {
 		errors := responseError{
 			ID:  "InternalServerError",

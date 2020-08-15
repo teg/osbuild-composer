@@ -28,7 +28,7 @@ type ImageBuild struct {
 	JobStarted  time.Time
 	JobFinished time.Time
 	Size        uint64
-	JobID       uuid.UUID
+	BuildJobID  uuid.UUID
 	// Kept for backwards compatibility. Image builds which were done
 	// before the move to the job queue use this to store whether they
 	// finished successfully.
@@ -53,7 +53,7 @@ func (ib *ImageBuild) DeepCopy() ImageBuild {
 		JobStarted:  ib.JobStarted,
 		JobFinished: ib.JobFinished,
 		Size:        ib.Size,
-		JobID:       ib.JobID,
+		BuildJobID:  ib.BuildJobID,
 	}
 }
 

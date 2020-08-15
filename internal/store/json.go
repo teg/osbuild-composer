@@ -45,7 +45,7 @@ type imageBuildV0 struct {
 	JobStarted  time.Time        `json:"job_started"`
 	JobFinished time.Time        `json:"job_finished"`
 	Size        uint64           `json:"size"`
-	JobID       uuid.UUID        `json:"jobid,omitempty"`
+	BuildJobID  uuid.UUID        `json:"jobid,omitempty"`
 
 	// Kept for backwards compatibility. Image builds which were done
 	// before the move to the job queue use this to store whether they
@@ -134,7 +134,7 @@ func newImageBuildFromV0(imageBuildStruct imageBuildV0, arch distro.Arch) (Image
 		JobStarted:  imageBuildStruct.JobStarted,
 		JobFinished: imageBuildStruct.JobFinished,
 		Size:        imageBuildStruct.Size,
-		JobID:       imageBuildStruct.JobID,
+		BuildJobID:  imageBuildStruct.BuildJobID,
 		QueueStatus: queueStatus,
 	}, nil
 }
@@ -266,7 +266,7 @@ func newComposeV0(compose Compose) composeV0 {
 				JobStarted:  compose.ImageBuild.JobStarted,
 				JobFinished: compose.ImageBuild.JobFinished,
 				Size:        compose.ImageBuild.Size,
-				JobID:       compose.ImageBuild.JobID,
+				BuildJobID:  compose.ImageBuild.BuildJobID,
 				QueueStatus: compose.ImageBuild.QueueStatus,
 			},
 		},

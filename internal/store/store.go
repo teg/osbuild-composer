@@ -331,7 +331,7 @@ func (s *Store) GetAllComposes() map[uuid.UUID]Compose {
 	return composes
 }
 
-func (s *Store) PushCompose(composeID uuid.UUID, manifest distro.Manifest, imageType distro.ImageType, bp *blueprint.Blueprint, size uint64, targets []*target.Target, jobId uuid.UUID) error {
+func (s *Store) PushCompose(composeID uuid.UUID, manifest distro.Manifest, imageType distro.ImageType, bp *blueprint.Blueprint, size uint64, targets []*target.Target, buildJobID uuid.UUID) error {
 	if _, exists := s.GetCompose(composeID); exists {
 		panic("a compose with this id already exists")
 	}
@@ -350,7 +350,7 @@ func (s *Store) PushCompose(composeID uuid.UUID, manifest distro.Manifest, image
 				Targets:    targets,
 				JobCreated: time.Now(),
 				Size:       size,
-				JobID:      jobId,
+				BuildJobID: buildJobID,
 			},
 		}
 		return nil
