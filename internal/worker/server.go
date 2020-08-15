@@ -233,7 +233,7 @@ func (s *Server) addJobHandler(writer http.ResponseWriter, request *http.Request
 	}
 
 	var job OSBuildJob
-	id, err := s.jobs.Dequeue(request.Context(), []string{"osbuild"}, &job)
+	id, _, err := s.jobs.Dequeue(request.Context(), []string{"osbuild"}, &job)
 	if err != nil {
 		jsonErrorf(writer, http.StatusInternalServerError, "%v", err)
 		return

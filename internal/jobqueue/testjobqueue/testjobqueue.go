@@ -79,7 +79,7 @@ func (q *testJobQueue) Enqueue(jobType string, args interface{}, dependencies []
 	return j.Id, nil
 }
 
-func (q *testJobQueue) Dequeue(ctx context.Context, jobTypes []string, args interface{}) (uuid.UUID, error) {
+func (q *testJobQueue) Dequeue(ctx context.Context, jobTypes []string, args interface{}) (uuid.UUID, []uuid.UUID, error) {
 	for _, t := range jobTypes {
 		if len(q.pending[t]) == 0 {
 			continue
@@ -92,14 +92,14 @@ func (q *testJobQueue) Dequeue(ctx context.Context, jobTypes []string, args inte
 
 		err := json.Unmarshal(j.Args, args)
 		if err != nil {
-			return uuid.Nil, err
+			return uuid.Nil, nil, err
 		}
 
 		j.StartedAt = time.Now()
-		return j.Id, nil
+		return j.Id, j.Dependencies, nil
 	}
 
-	return uuid.Nil, errors.New("no job available")
+	return uuid.Nil, nil, errors.New("no job available")
 }
 
 func (q *testJobQueue) FinishJob(id uuid.UUID, result interface{}) error {

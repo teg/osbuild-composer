@@ -41,8 +41,8 @@ type JobQueue interface {
 	// All jobs in `jobTypes` must take the same type of `args`, corresponding to
 	// the one that was passed to Enqueue().
 	//
-	// Returns the job's id or an error.
-	Dequeue(ctx context.Context, jobTypes []string, args interface{}) (uuid.UUID, error)
+	// Returns the job's id and the ids of its dependencies, or an error.
+	Dequeue(ctx context.Context, jobTypes []string, args interface{}) (uuid.UUID, []uuid.UUID, error)
 
 	// Mark the job with `id` as finished. `result` must fit the associated
 	// job type and must be serializable to JSON.

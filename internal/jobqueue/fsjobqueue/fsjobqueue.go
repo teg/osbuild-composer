@@ -144,13 +144,13 @@ func (q *fsJobQueue) Enqueue(jobType string, args interface{}, dependencies []uu
 	return j.Id, nil
 }
 
-func (q *fsJobQueue) Dequeue(ctx context.Context, jobTypes []string, args interface{}) (uuid.UUID, error) {
+func (q *fsJobQueue) Dequeue(ctx context.Context, jobTypes []string, args interface{}) (uuid.UUID, []uuid.UUID, error) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 
 	// Return early if the context is already canceled.
 	if err := ctx.Err(); err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, nil, err
 	}
 
 	// Filter q.pending by the `jobTypes`. Ignore those job types that this
@@ -172,12 +172,12 @@ func (q *fsJobQueue) Dequeue(ctx context.Context, jobTypes []string, args interf
 		q.mu.Lock()
 
 		if err != nil {
-			return uuid.Nil, err
+			return uuid.Nil, nil, err
 		}
 
 		j, err = q.readJob(id)
 		if err != nil {
-			return uuid.Nil, err
+			return uuid.Nil, nil, err
 		}
 
 		if !j.Canceled {
@@ -187,17 +187,17 @@ func (q *fsJobQueue) Dequeue(ctx context.Context, jobTypes []string, args interf
 
 	err := json.Unmarshal(j.Args, args)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("error unmarshaling arguments for job '%s': %v", j.Id, err)
+		return uuid.Nil, nil, fmt.Errorf("error unmarshaling arguments for job '%s': %v", j.Id, err)
 	}
 
 	j.StartedAt = time.Now()
 
 	err = q.db.Write(j.Id.String(), j)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("error writing job %s: %v", j.Id, err)
+		return uuid.Nil, nil, fmt.Errorf("error writing job %s: %v", j.Id, err)
 	}
 
-	return j.Id, nil
+	return j.Id, j.Dependencies, nil
 }
 
 func (q *fsJobQueue) FinishJob(id uuid.UUID, result interface{}) error {
