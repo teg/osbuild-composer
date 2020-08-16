@@ -172,7 +172,7 @@ func WatchJob(ctx context.Context, client *worker.Client, job *worker.BuildJob) 
 	for {
 		select {
 		case <-time.After(15 * time.Second):
-			if client.JobCanceled(job) {
+			if client.JobCanceled(job.ID) {
 				log.Println("Job was canceled. Exiting.")
 				os.Exit(0)
 			}

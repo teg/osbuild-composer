@@ -128,8 +128,8 @@ func (c *Client) AddRegistrationJob() (*RegistrationJob, error) {
 	}, nil
 }
 
-func (c *Client) JobCanceled(job *BuildJob) bool {
-	response, err := c.client.Get(c.createURL("/job-queue/v1/jobs/" + job.ID.String()))
+func (c *Client) JobCanceled(jobID uuid.UUID) bool {
+	response, err := c.client.Get(c.createURL("/job-queue/v1/jobs/" + jobID.String()))
 	if err != nil {
 		return true
 	}
