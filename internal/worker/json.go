@@ -12,12 +12,12 @@ import (
 // JSON-serializable types for the jobqueue
 //
 
-type OSBuildJob struct {
+type buildJob struct {
 	Manifest distro.Manifest  `json:"manifest"`
 	Targets  []*target.Target `json:"targets,omitempty"`
 }
 
-type OSBuildJobResult struct {
+type buildJobResult struct {
 	OSBuildOutput *common.ComposeResult `json:"osbuild_output,omitempty"`
 }
 

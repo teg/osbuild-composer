@@ -34,7 +34,7 @@ type JobStatus struct {
 	Started  time.Time
 	Finished time.Time
 	Canceled bool
-	Result   OSBuildJobResult
+	Result   buildJobResult
 }
 
 func NewServer(logger *log.Logger, jobs jobqueue.JobQueue, artifactsDir string) *Server {
@@ -83,7 +83,7 @@ func (s *Server) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 }
 
 func (s *Server) EnqueueBuild(manifest distro.Manifest, targets []*target.Target) (uuid.UUID, error) {
-	job := OSBuildJob{
+	job := buildJob{
 		Manifest: manifest,
 		Targets:  targets,
 	}
@@ -93,7 +93,7 @@ func (s *Server) EnqueueBuild(manifest distro.Manifest, targets []*target.Target
 
 func (s *Server) JobStatus(id uuid.UUID) (*JobStatus, error) {
 	var canceled bool
-	var result OSBuildJobResult
+	var result buildJobResult
 
 	queued, started, finished, canceled, err := s.jobs.JobStatus(id, &result)
 	if err != nil {
@@ -233,7 +233,7 @@ func (s *Server) addJobHandler(writer http.ResponseWriter, request *http.Request
 	}
 
 	if body.JobType == "osbuild" {
-		var job OSBuildJob
+		var job buildJob
 		id, _, err := s.jobs.Dequeue(request.Context(), []string{"osbuild"}, &job)
 		if err != nil {
 			jsonErrorf(writer, http.StatusInternalServerError, "%v", err)
@@ -281,7 +281,7 @@ func (s *Server) updateJobHandler(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	err = s.jobs.FinishJob(id, OSBuildJobResult{OSBuildOutput: body.Result})
+	err = s.jobs.FinishJob(id, buildJobResult{OSBuildOutput: body.Result})
 	if err != nil {
 		switch err {
 		case jobqueue.ErrNotExist:
