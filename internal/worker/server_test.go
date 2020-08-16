@@ -74,6 +74,60 @@ func TestCreateBuild(t *testing.T) {
 		`{"id":"`+id.String()+`","canceled":false}`)
 }
 
+func TestCreateRegistration(t *testing.T) {
+	server := worker.NewServer(nil, testjobqueue.New(), "")
+
+	id, err := server.EnqueueRegistration(nil, nil)
+	require.NoError(t, err)
+
+	test.TestRoute(t, server, false, "POST", "/job-queue/v1/jobs", `{"job_type":"registration"}`, http.StatusCreated,
+		`{"build_results":null,"id":"`+id.String()+`"}`, "created")
+
+	test.TestRoute(t, server, false, "GET", fmt.Sprintf("/job-queue/v1/jobs/%s", id), `{}`, http.StatusOK,
+		`{"id":"`+id.String()+`","canceled":false}`)
+}
+
+func TestDependency(t *testing.T) {
+	distroStruct := fedoratest.New()
+	arch, err := distroStruct.GetArch("x86_64")
+	if err != nil {
+		t.Fatalf("error getting arch from distro")
+	}
+	imageType, err := arch.GetImageType("qcow2")
+	if err != nil {
+		t.Fatalf("error getting image type from arch")
+	}
+	manifest, err := imageType.Manifest(nil, distro.ImageOptions{Size: imageType.Size(0)}, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("error creating osbuild manifest")
+	}
+	server := worker.NewServer(nil, testjobqueue.New(), "")
+
+	id1, err := server.EnqueueBuild(manifest, nil)
+	require.NoError(t, err)
+
+	test.TestRoute(t, server, false, "POST", "/job-queue/v1/jobs", `{"job_type":"osbuild"}`, http.StatusCreated,
+		`{"id":"`+id1.String()+`","manifest":{"sources":{},"pipeline":{}}}`, "created")
+
+	result1 := `{"assembler":null,"build":null,"output_id":"","stages":null,"success":true,"tree_id":""}`
+	test.SendHTTP(server, false, "PATCH", "/job-queue/v1/jobs/"+id1.String(), `{"status":"FINISHED","result":`+result1+`}`)
+
+	id2, err := server.EnqueueBuild(manifest, nil)
+	require.NoError(t, err)
+
+	test.TestRoute(t, server, false, "POST", "/job-queue/v1/jobs", `{"job_type":"osbuild"}`, http.StatusCreated,
+		`{"id":"`+id2.String()+`","manifest":{"sources":{},"pipeline":{}}}`, "created")
+
+	result2 := `{"assembler":null,"build":null,"output_id":"","stages":null,"success":false,"tree_id":""}`
+	test.SendHTTP(server, false, "PATCH", "/job-queue/v1/jobs/"+id2.String(), `{"status":"FAILED","result":`+result2+`}`)
+
+	id, err := server.EnqueueRegistration([]uuid.UUID{id1, id2}, nil)
+	require.NoError(t, err)
+
+	test.TestRoute(t, server, false, "POST", "/job-queue/v1/jobs", `{"job_type":"registration"}`, http.StatusCreated,
+		`{"build_results":[`+result1+`,`+result2+`],"id":"`+id.String()+`"}`, "created")
+}
+
 func TestCancel(t *testing.T) {
 	distroStruct := fedoratest.New()
 	arch, err := distroStruct.GetArch("x86_64")

@@ -21,6 +21,14 @@ type buildJobResult struct {
 	OSBuildOutput *common.ComposeResult `json:"osbuild_output,omitempty"`
 }
 
+type registrationJob struct {
+	Targets []*target.Target `json:"targets,omitempty"`
+}
+
+type registrationJobResult struct {
+	RegistrationOutput *common.ComposeResult `json:"registration_output,omitempty"`
+}
+
 //
 // JSON-serializable types for the HTTP API
 //
@@ -41,6 +49,12 @@ type addBuildJobResponse struct {
 	ID       uuid.UUID        `json:"id"`
 	Manifest distro.Manifest  `json:"manifest"`
 	Targets  []*target.Target `json:"targets,omitempty"`
+}
+
+type addRegistrationJobResponse struct {
+	ID           uuid.UUID              `json:"id"`
+	BuildResults []common.ComposeResult `json:"build_results"`
+	Targets      []*target.Target       `json:"targets,omitempty"`
 }
 
 type jobResponse struct {

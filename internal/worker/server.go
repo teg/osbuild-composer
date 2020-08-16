@@ -91,6 +91,14 @@ func (s *Server) EnqueueBuild(manifest distro.Manifest, targets []*target.Target
 	return s.jobs.Enqueue("osbuild", job, nil)
 }
 
+func (s *Server) EnqueueRegistration(buildJobIDs []uuid.UUID, targets []*target.Target) (uuid.UUID, error) {
+	job := registrationJob{
+		Targets: targets,
+	}
+
+	return s.jobs.Enqueue("registration", job, buildJobIDs)
+}
+
 func (s *Server) JobStatus(id uuid.UUID) (*JobStatus, error) {
 	var canceled bool
 	var result buildJobResult
@@ -246,6 +254,28 @@ func (s *Server) addJobHandler(writer http.ResponseWriter, request *http.Request
 			ID:       id,
 			Manifest: job.Manifest,
 			Targets:  job.Targets,
+		})
+	} else if body.JobType == "registration" {
+		var job registrationJob
+		id, deps, err := s.jobs.Dequeue(request.Context(), []string{"registration"}, &job)
+		if err != nil {
+			jsonErrorf(writer, http.StatusInternalServerError, "%v", err)
+			return
+		}
+
+		var results []common.ComposeResult
+		for _, dep := range deps {
+			var result buildJobResult
+			s.jobs.JobStatus(dep, &result)
+			results = append(results, *result.OSBuildOutput)
+		}
+
+		writer.WriteHeader(http.StatusCreated)
+		// FIXME: handle or comment this possible error
+		_ = json.NewEncoder(writer).Encode(addRegistrationJobResponse{
+			ID:           id,
+			BuildResults: results,
+			Targets:      job.Targets,
 		})
 	} else {
 		jsonErrorf(writer, http.StatusBadRequest, "invalid job type '%s'", body.JobType)

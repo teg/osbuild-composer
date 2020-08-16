@@ -30,6 +30,12 @@ type BuildJob struct {
 	Targets  []*target.Target
 }
 
+type RegistrationJob struct {
+	ID           uuid.UUID
+	BuildResults []common.ComposeResult
+	Targets      []*target.Target
+}
+
 func NewClient(address string, conf *tls.Config) *Client {
 	client := &http.Client{
 		Transport: &http.Transport{
@@ -87,6 +93,37 @@ func (c *Client) AddBuildJob() (*BuildJob, error) {
 	return &BuildJob{
 		jr.ID,
 		jr.Manifest,
+		jr.Targets,
+	}, nil
+}
+
+func (c *Client) AddRegistrationJob() (*RegistrationJob, error) {
+	var b bytes.Buffer
+	err := json.NewEncoder(&b).Encode(addJobRequest{JobType: "registration"})
+	if err != nil {
+		panic(err)
+	}
+	response, err := c.client.Post(c.createURL("/job-queue/v1/jobs"), "application/json", &b)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusCreated {
+		var er errorResponse
+		_ = json.NewDecoder(response.Body).Decode(&er)
+		return nil, fmt.Errorf("couldn't create job, got %d: %s", response.StatusCode, er.Message)
+	}
+
+	var jr addRegistrationJobResponse
+	err = json.NewDecoder(response.Body).Decode(&jr)
+	if err != nil {
+		return nil, err
+	}
+
+	return &RegistrationJob{
+		jr.ID,
+		jr.BuildResults,
 		jr.Targets,
 	}, nil
 }
