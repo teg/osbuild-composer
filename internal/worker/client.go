@@ -175,8 +175,8 @@ func (c *Client) UpdateJob(job *BuildJob, status common.ImageBuildState, result 
 	return nil
 }
 
-func (c *Client) UploadImage(job uuid.UUID, name string, reader io.Reader) error {
-	url := c.createURL(fmt.Sprintf("/job-queue/v1/jobs/%s/artifacts/%s", job, name))
+func (c *Client) UploadImage(job BuildJob, name string, reader io.Reader) error {
+	url := c.createURL(fmt.Sprintf("/job-queue/v1/jobs/%s/artifacts/%s", job.ID, name))
 	_, err := c.client.Post(url, "application/octet-stream", reader)
 
 	return err

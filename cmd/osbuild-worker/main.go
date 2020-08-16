@@ -14,7 +14,6 @@ import (
 	"path"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/osbuild/osbuild-composer/internal/common"
 	"github.com/osbuild/osbuild-composer/internal/target"
 	"github.com/osbuild/osbuild-composer/internal/upload/awsupload"
@@ -65,7 +64,7 @@ func (e *TargetsError) Error() string {
 	return errString
 }
 
-func RunJob(job *worker.BuildJob, store string, uploadFunc func(uuid.UUID, string, io.Reader) error) (*common.ComposeResult, error) {
+func RunJob(job *worker.BuildJob, store string, uploadFunc func(worker.BuildJob, string, io.Reader) error) (*common.ComposeResult, error) {
 	outputDirectory, err := ioutil.TempDir("/var/tmp", "osbuild-worker-*")
 	if err != nil {
 		return nil, fmt.Errorf("error creating temporary output directory: %v", err)
@@ -93,7 +92,7 @@ func RunJob(job *worker.BuildJob, store string, uploadFunc func(uuid.UUID, strin
 				continue
 			}
 
-			err = uploadFunc(job.ID, options.Filename, f)
+			err = uploadFunc(*job, options.Filename, f)
 			if err != nil {
 				r = append(r, err)
 				continue
