@@ -48,7 +48,7 @@ func TestErrors(t *testing.T) {
 	}
 }
 
-func TestCreate(t *testing.T) {
+func TestCreateBuild(t *testing.T) {
 	distroStruct := fedoratest.New()
 	arch, err := distroStruct.GetArch("x86_64")
 	if err != nil {
@@ -64,10 +64,10 @@ func TestCreate(t *testing.T) {
 	}
 	server := worker.NewServer(nil, testjobqueue.New(), "")
 
-	id, err := server.Enqueue(manifest, nil)
+	id, err := server.EnqueueBuild(manifest, nil)
 	require.NoError(t, err)
 
-	test.TestRoute(t, server, false, "POST", "/job-queue/v1/jobs", `{}`, http.StatusCreated,
+	test.TestRoute(t, server, false, "POST", "/job-queue/v1/jobs", `{"job_type":"osbuild"}`, http.StatusCreated,
 		`{"id":"`+id.String()+`","manifest":{"sources":{},"pipeline":{}}}`, "created")
 
 	test.TestRoute(t, server, false, "GET", fmt.Sprintf("/job-queue/v1/jobs/%s", id), `{}`, http.StatusOK,
@@ -90,10 +90,10 @@ func TestCancel(t *testing.T) {
 	}
 	server := worker.NewServer(nil, testjobqueue.New(), "")
 
-	id, err := server.Enqueue(manifest, nil)
+	id, err := server.EnqueueBuild(manifest, nil)
 	require.NoError(t, err)
 
-	test.TestRoute(t, server, false, "POST", "/job-queue/v1/jobs", `{}`, http.StatusCreated,
+	test.TestRoute(t, server, false, "POST", "/job-queue/v1/jobs", `{"job_type":"osbuild"}`, http.StatusCreated,
 		`{"id":"`+id.String()+`","manifest":{"sources":{},"pipeline":{}}}`, "created")
 
 	err = server.Cancel(id)
@@ -122,11 +122,11 @@ func testUpdateTransition(t *testing.T, from, to string, expectedStatus int) {
 			t.Fatalf("error creating osbuild manifest")
 		}
 
-		id, err = server.Enqueue(manifest, nil)
+		id, err = server.EnqueueBuild(manifest, nil)
 		require.NoError(t, err)
 
 		if from != "WAITING" {
-			test.SendHTTP(server, false, "POST", "/job-queue/v1/jobs", `{}`)
+			test.SendHTTP(server, false, "POST", "/job-queue/v1/jobs", `{"job_type":"osbuild"}`)
 			if from != "RUNNING" {
 				test.SendHTTP(server, false, "PATCH", "/job-queue/v1/jobs/"+id.String(), `{"status":"`+from+`"}`)
 			}

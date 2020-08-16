@@ -24,8 +24,8 @@ type Client struct {
 	hostname string
 }
 
-type Job struct {
-	Id       uuid.UUID
+type BuildJob struct {
+	ID       uuid.UUID
 	Manifest distro.Manifest
 	Targets  []*target.Target
 }
@@ -60,9 +60,9 @@ func NewClientUnix(path string) *Client {
 	return &Client{client, "http", "localhost"}
 }
 
-func (c *Client) AddJob() (*Job, error) {
+func (c *Client) AddBuildJob() (*BuildJob, error) {
 	var b bytes.Buffer
-	err := json.NewEncoder(&b).Encode(addJobRequest{})
+	err := json.NewEncoder(&b).Encode(addJobRequest{JobType: "osbuild"})
 	if err != nil {
 		panic(err)
 	}
@@ -78,21 +78,21 @@ func (c *Client) AddJob() (*Job, error) {
 		return nil, fmt.Errorf("couldn't create job, got %d: %s", response.StatusCode, er.Message)
 	}
 
-	var jr addJobResponse
+	var jr addBuildJobResponse
 	err = json.NewDecoder(response.Body).Decode(&jr)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Job{
-		jr.Id,
+	return &BuildJob{
+		jr.ID,
 		jr.Manifest,
 		jr.Targets,
 	}, nil
 }
 
-func (c *Client) JobCanceled(job *Job) bool {
-	response, err := c.client.Get(c.createURL("/job-queue/v1/jobs/" + job.Id.String()))
+func (c *Client) JobCanceled(job *BuildJob) bool {
+	response, err := c.client.Get(c.createURL("/job-queue/v1/jobs/" + job.ID.String()))
 	if err != nil {
 		return true
 	}
@@ -111,13 +111,13 @@ func (c *Client) JobCanceled(job *Job) bool {
 	return jr.Canceled
 }
 
-func (c *Client) UpdateJob(job *Job, status common.ImageBuildState, result *common.ComposeResult) error {
+func (c *Client) UpdateJob(job *BuildJob, status common.ImageBuildState, result *common.ComposeResult) error {
 	var b bytes.Buffer
 	err := json.NewEncoder(&b).Encode(&updateJobRequest{status, result})
 	if err != nil {
 		panic(err)
 	}
-	urlPath := fmt.Sprintf("/job-queue/v1/jobs/%s", job.Id)
+	urlPath := fmt.Sprintf("/job-queue/v1/jobs/%s", job.ID)
 	url := c.createURL(urlPath)
 	req, err := http.NewRequest("PATCH", url, &b)
 	if err != nil {

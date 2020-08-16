@@ -65,7 +65,7 @@ func (e *TargetsError) Error() string {
 	return errString
 }
 
-func RunJob(job *worker.Job, store string, uploadFunc func(uuid.UUID, string, io.Reader) error) (*common.ComposeResult, error) {
+func RunJob(job *worker.BuildJob, store string, uploadFunc func(uuid.UUID, string, io.Reader) error) (*common.ComposeResult, error) {
 	outputDirectory, err := ioutil.TempDir("/var/tmp", "osbuild-worker-*")
 	if err != nil {
 		return nil, fmt.Errorf("error creating temporary output directory: %v", err)
@@ -93,7 +93,7 @@ func RunJob(job *worker.Job, store string, uploadFunc func(uuid.UUID, string, io
 				continue
 			}
 
-			err = uploadFunc(job.Id, options.Filename, f)
+			err = uploadFunc(job.ID, options.Filename, f)
 			if err != nil {
 				r = append(r, err)
 				continue
@@ -108,7 +108,7 @@ func RunJob(job *worker.Job, store string, uploadFunc func(uuid.UUID, string, io
 			}
 
 			if options.Key == "" {
-				options.Key = job.Id.String()
+				options.Key = job.ID.String()
 			}
 
 			_, err = a.Upload(path.Join(outputDirectory, options.Filename), options.Bucket, options.Key)
@@ -168,7 +168,7 @@ func RunJob(job *worker.Job, store string, uploadFunc func(uuid.UUID, string, io
 // It would be cleaner to kill the osbuild process using (`exec.CommandContext`
 // or similar), but osbuild does not currently support this. Exiting here will
 // make systemd clean up the whole cgroup and restart this service.
-func WatchJob(ctx context.Context, client *worker.Client, job *worker.Job) {
+func WatchJob(ctx context.Context, client *worker.Client, job *worker.BuildJob) {
 	for {
 		select {
 		case <-time.After(15 * time.Second):
@@ -223,12 +223,12 @@ func main() {
 
 	for {
 		fmt.Println("Waiting for a new job...")
-		job, err := client.AddJob()
+		job, err := client.AddBuildJob()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("Running job %s\n", job.Id)
+		fmt.Printf("Running job %s\n", job.ID)
 
 		ctx, cancel := context.WithCancel(context.Background())
 		go WatchJob(ctx, client, job)
@@ -260,7 +260,7 @@ func main() {
 			// flag to indicate all error kinds.
 			result.Success = false
 		} else {
-			log.Printf("  🎉 Job completed successfully: %s", job.Id)
+			log.Printf("  🎉 Job completed successfully: %s", job.ID)
 			status = common.IBFinished
 		}
 

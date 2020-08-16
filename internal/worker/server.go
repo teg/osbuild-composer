@@ -82,7 +82,7 @@ func (s *Server) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
 	s.router.ServeHTTP(writer, request)
 }
 
-func (s *Server) Enqueue(manifest distro.Manifest, targets []*target.Target) (uuid.UUID, error) {
+func (s *Server) EnqueueBuild(manifest distro.Manifest, targets []*target.Target) (uuid.UUID, error) {
 	job := OSBuildJob{
 		Manifest: manifest,
 		Targets:  targets,
@@ -213,7 +213,7 @@ func (s *Server) jobHandler(writer http.ResponseWriter, request *http.Request, p
 	}
 
 	_ = json.NewEncoder(writer).Encode(jobResponse{
-		Id:       id,
+		ID:       id,
 		Canceled: status.Canceled,
 	})
 }
@@ -232,20 +232,25 @@ func (s *Server) addJobHandler(writer http.ResponseWriter, request *http.Request
 		return
 	}
 
-	var job OSBuildJob
-	id, _, err := s.jobs.Dequeue(request.Context(), []string{"osbuild"}, &job)
-	if err != nil {
-		jsonErrorf(writer, http.StatusInternalServerError, "%v", err)
+	if body.JobType == "osbuild" {
+		var job OSBuildJob
+		id, _, err := s.jobs.Dequeue(request.Context(), []string{"osbuild"}, &job)
+		if err != nil {
+			jsonErrorf(writer, http.StatusInternalServerError, "%v", err)
+			return
+		}
+
+		writer.WriteHeader(http.StatusCreated)
+		// FIXME: handle or comment this possible error
+		_ = json.NewEncoder(writer).Encode(addBuildJobResponse{
+			ID:       id,
+			Manifest: job.Manifest,
+			Targets:  job.Targets,
+		})
+	} else {
+		jsonErrorf(writer, http.StatusBadRequest, "invalid job type '%s'", body.JobType)
 		return
 	}
-
-	writer.WriteHeader(http.StatusCreated)
-	// FIXME: handle or comment this possible error
-	_ = json.NewEncoder(writer).Encode(addJobResponse{
-		Id:       id,
-		Manifest: job.Manifest,
-		Targets:  job.Targets,
-	})
 }
 
 func (s *Server) updateJobHandler(writer http.ResponseWriter, request *http.Request, params httprouter.Params) {
