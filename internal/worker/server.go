@@ -28,7 +28,7 @@ type Server struct {
 	artifactsDir string
 }
 
-type JobStatus struct {
+type BuildJobStatus struct {
 	State    common.ComposeState
 	Queued   time.Time
 	Started  time.Time
@@ -99,7 +99,7 @@ func (s *Server) EnqueueRegistration(buildJobIDs []uuid.UUID, targets []*target.
 	return s.jobs.Enqueue("registration", job, buildJobIDs)
 }
 
-func (s *Server) JobStatus(id uuid.UUID) (*JobStatus, error) {
+func (s *Server) BuildJobStatus(id uuid.UUID) (*BuildJobStatus, error) {
 	var canceled bool
 	var result buildJobResult
 
@@ -120,7 +120,7 @@ func (s *Server) JobStatus(id uuid.UUID) (*JobStatus, error) {
 		state = common.CRunning
 	}
 
-	return &JobStatus{
+	return &BuildJobStatus{
 		State:    state,
 		Queued:   queued,
 		Started:  started,
@@ -136,8 +136,8 @@ func (s *Server) Cancel(id uuid.UUID) error {
 
 // Provides access to artifacts of a job. Returns an io.Reader for the artifact
 // and the artifact's size.
-func (s *Server) JobArtifact(id uuid.UUID, name string) (io.Reader, int64, error) {
-	status, err := s.JobStatus(id)
+func (s *Server) BuildJobArtifact(id uuid.UUID, name string) (io.Reader, int64, error) {
+	status, err := s.BuildJobStatus(id)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -162,7 +162,7 @@ func (s *Server) JobArtifact(id uuid.UUID, name string) (io.Reader, int64, error
 
 // Deletes all artifacts for job `id`.
 func (s *Server) DeleteArtifacts(id uuid.UUID) error {
-	status, err := s.JobStatus(id)
+	status, err := s.BuildJobStatus(id)
 	if err != nil {
 		return err
 	}
@@ -209,7 +209,7 @@ func (s *Server) jobHandler(writer http.ResponseWriter, request *http.Request, p
 		return
 	}
 
-	status, err := s.JobStatus(id)
+	status, err := s.BuildJobStatus(id)
 	if err != nil {
 		switch err {
 		case jobqueue.ErrNotExist:
@@ -296,7 +296,7 @@ func (s *Server) updateJobHandler(writer http.ResponseWriter, request *http.Requ
 		return
 	}
 
-	var body updateJobRequest
+	var body updateBuildJobRequest
 	err = json.NewDecoder(request.Body).Decode(&body)
 	if err != nil {
 		jsonErrorf(writer, http.StatusBadRequest, "cannot parse request body: %v", err)

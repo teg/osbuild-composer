@@ -62,7 +62,7 @@ type jobResponse struct {
 	Canceled bool      `json:"canceled"`
 }
 
-type updateJobRequest struct {
+type updateBuildJobRequest struct {
 	Status common.ImageBuildState `json:"status"`
 	Result *common.ComposeResult  `json:"result"`
 }

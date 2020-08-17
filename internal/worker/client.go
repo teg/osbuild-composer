@@ -148,9 +148,9 @@ func (c *Client) JobCanceled(jobID uuid.UUID) bool {
 	return jr.Canceled
 }
 
-func (c *Client) UpdateJob(job *BuildJob, status common.ImageBuildState, result *common.ComposeResult) error {
+func (c *Client) UpdateBuildJob(job *BuildJob, status common.ImageBuildState, result *common.ComposeResult) error {
 	var b bytes.Buffer
-	err := json.NewEncoder(&b).Encode(&updateJobRequest{status, result})
+	err := json.NewEncoder(&b).Encode(&updateBuildJobRequest{status, result})
 	if err != nil {
 		panic(err)
 	}

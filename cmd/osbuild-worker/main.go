@@ -266,7 +266,7 @@ func main() {
 		// signal to WatchJob() that it can stop watching
 		cancel()
 
-		err = client.UpdateJob(job, status, result)
+		err = client.UpdateBuildJob(job, status, result)
 		if err != nil {
 			log.Fatalf("Error reporting job result: %v", err)
 		}

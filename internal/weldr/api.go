@@ -199,7 +199,7 @@ func (api *API) getComposeStatus(compose store.Compose) *composeStatus {
 	}
 
 	// is it ok to ignore this error?
-	jobStatus, _ := api.workers.JobStatus(buildJobID)
+	jobStatus, _ := api.workers.BuildJobStatus(buildJobID)
 	return &composeStatus{
 		State:    jobStatus.State,
 		Queued:   jobStatus.Queued,
@@ -215,7 +215,7 @@ func (api *API) getComposeStatus(compose store.Compose) *composeStatus {
 func (api *API) openImageFile(composeId uuid.UUID, compose store.Compose) (io.Reader, int64, error) {
 	name := compose.ImageBuild.ImageType.Filename()
 
-	reader, size, err := api.workers.JobArtifact(compose.ImageBuild.BuildJobID, name)
+	reader, size, err := api.workers.BuildJobArtifact(compose.ImageBuild.BuildJobID, name)
 	if err != nil {
 		if api.compatOutputDir == "" || err != jobqueue.ErrNotExist {
 			return nil, 0, err
