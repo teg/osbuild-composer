@@ -71,6 +71,9 @@ fi
 
 # Start services.
 sudo systemctl enable --now osbuild-composer.socket
+if [[ $ID == rhel ]]; then
+    sudo systemctl enable --now osbuild-composer-koji.socket
+fi
 
 # Verify that the API is running.
 sudo composer-cli status show

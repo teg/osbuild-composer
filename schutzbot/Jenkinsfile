@@ -267,6 +267,7 @@ pipeline {
                     steps {
                         unstash 'rhel8cdn'
                         run_tests('integration')
+                        run_tests('koji')
                     }
                     post {
                         always {
@@ -544,6 +545,13 @@ void run_tests(test_type) {
         sh (
             label: "OSTree tests",
             script: "test/image-tests/ostree.sh"
+        )
+    }
+
+    if (test_type == 'koji') {
+        sh (
+            label: "Koji tests",
+            script: "test/image-tests/koji.sh"
         )
     }
 
