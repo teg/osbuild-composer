@@ -82,10 +82,14 @@ func RunJob(job *worker.Job, store string, uploadFunc func(uuid.UUID, string, io
 		}
 	}()
 
+	start_time := time.Now()
+
 	result, err := RunOSBuild(job.Manifest, store, outputDirectory, os.Stderr)
 	if err != nil {
 		return nil, err
 	}
+
+	end_time := time.Now()
 
 	var r []error
 
@@ -200,12 +204,13 @@ func RunJob(job *worker.Job, store string, uploadFunc func(uuid.UUID, string, io
 				continue
 			}
 
-			build := koji.Build{
-				Name:      job.Id.String(),
-				Version:   "1",
-				Release:   "1",
-				StartTime: time.Now().Unix(),
-				EndTime:   time.Now().Unix(),
+			build := koji.ImageBuild{
+				BuildID:   options.BuildID,
+				Name:      options.Name,
+				Version:   options.Version,
+				Release:   options.Release,
+				StartTime: start_time.Unix(),
+				EndTime:   end_time.Unix(),
 			}
 			buildRoots := []koji.BuildRoot{
 				{
@@ -222,11 +227,11 @@ func RunJob(job *worker.Job, store string, uploadFunc func(uuid.UUID, string, io
 						Type: "nspawn",
 						Arch: "noarch",
 					},
-					Tools:      []koji.Tool{},
-					Components: []koji.Component{},
+					Tools: []koji.Tool{},
+					RPMs:  []koji.RPM{},
 				},
 			}
-			output := []koji.Output{
+			output := []koji.Image{
 				{
 					BuildRootID:  1,
 					Filename:     options.Filename,
@@ -235,16 +240,16 @@ func RunJob(job *worker.Job, store string, uploadFunc func(uuid.UUID, string, io
 					ChecksumType: "md5",
 					MD5:          hash,
 					Type:         "image",
-					Components:   []koji.Component{},
-					Extra: koji.OutputExtra{
-						Image: koji.OutputExtraImageInfo{
+					RPMs:         []koji.RPM{},
+					Extra: koji.ImageExtra{
+						Info: koji.ImageExtraInfo{
 							Arch: "noarch",
 						},
 					},
 				},
 			}
 
-			_, err = k.CGImport(build, buildRoots, output, options.UploadDirectory)
+			_, err = k.CGImport(build, buildRoots, output, options.UploadDirectory, options.Token)
 			if err != nil {
 				r = append(r, err)
 				continue

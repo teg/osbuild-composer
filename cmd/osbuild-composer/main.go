@@ -14,6 +14,7 @@ import (
 	"github.com/osbuild/osbuild-composer/internal/distro/rhel8"
 	"github.com/osbuild/osbuild-composer/internal/jobqueue/fsjobqueue"
 	"github.com/osbuild/osbuild-composer/internal/kojiapi"
+	"github.com/osbuild/osbuild-composer/internal/upload/koji"
 
 	"github.com/osbuild/osbuild-composer/internal/common"
 	"github.com/osbuild/osbuild-composer/internal/distro"
@@ -157,7 +158,10 @@ func main() {
 		}
 		kojiListener := kojiListeners[0]
 
-		kojiServer := kojiapi.NewServer(workers, rpm, distros)
+		credentials, err := koji.GSSAPICredentialsFromEnv()
+		common.PanicOnError(err)
+
+		kojiServer := kojiapi.NewServer(workers, rpm, distros, credentials)
 
 		go func() {
 			err = kojiServer.Serve(kojiListener)
