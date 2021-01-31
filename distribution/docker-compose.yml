@@ -10,6 +10,9 @@ services:
     networks:
       net:
         ipv4_address: 172.30.0.10
+    ports:
+      - "8700"
+      - "9196:9196"
   worker:
     image: local/osbuild-worker
     build:

@@ -18,6 +18,7 @@ import (
 	"github.com/osbuild/osbuild-composer/internal/target"
 	"github.com/osbuild/osbuild-composer/internal/upload/awsupload"
 	"github.com/osbuild/osbuild-composer/internal/upload/azure"
+	"github.com/osbuild/osbuild-composer/internal/upload/gcp"
 	"github.com/osbuild/osbuild-composer/internal/upload/koji"
 	"github.com/osbuild/osbuild-composer/internal/upload/vmware"
 	"github.com/osbuild/osbuild-composer/internal/worker"
@@ -186,6 +187,16 @@ func (impl *OSBuildJobImpl) Run(job worker.Job) error {
 				azureMaxUploadGoroutines,
 			)
 
+			if err != nil {
+				r = append(r, err)
+				continue
+			}
+		case *target.GCPTargetOptions:
+			if !osbuildOutput.Success {
+				continue
+			}
+
+			err = gcp.Upload(path.Join(outputDirectory, options.Filename), options.Bucket, options.Object)
 			if err != nil {
 				r = append(r, err)
 				continue

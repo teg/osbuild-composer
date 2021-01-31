@@ -67,6 +67,21 @@ type Customizations struct {
 	Subscription *Subscription `json:"subscription,omitempty"`
 }
 
+// GCPUploadRequestOptions defines model for GCPUploadRequestOptions.
+type GCPUploadRequestOptions struct {
+	Storage GCPUploadRequestOptionsStorage `json:"storage"`
+}
+
+// GCPUploadRequestOptionsStorage defines model for GCPUploadRequestOptionsStorage.
+type GCPUploadRequestOptionsStorage struct {
+	Bucket string `json:"bucket"`
+}
+
+// GCPUploadStatus defines model for GCPUploadStatus.
+type GCPUploadStatus struct {
+	AmiId *string `json:"ami_id,omitempty"`
+}
+
 // ImageRequest defines model for ImageRequest.
 type ImageRequest struct {
 	Architecture   string          `json:"architecture"`

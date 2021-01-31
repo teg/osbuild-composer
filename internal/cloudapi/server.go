@@ -198,8 +198,30 @@ func (server *Server) Compose(w http.ResponseWriter, r *http.Request) {
 			}
 
 			targets = append(targets, t)
+		} else if uploadRequest.Type == "gcp" {
+			var gcpUploadOptions GCPUploadRequestOptions
+			jsonUploadOptions, err := json.Marshal(uploadRequest.Options)
+			if err != nil {
+				http.Error(w, "Unable to marshal gcp upload request", http.StatusInternalServerError)
+				return
+			}
+			err = json.Unmarshal(jsonUploadOptions, &gcpUploadOptions)
+			if err != nil {
+				http.Error(w, "Unable to unmarshal gcp upload request", http.StatusInternalServerError)
+				return
+			}
+
+			object := fmt.Sprintf("composer-api-%s", uuid.New().String())
+			t := target.NewGCPTarget(&target.GCPTargetOptions{
+				Filename: imageType.Filename(),
+				Bucket:   gcpUploadOptions.Storage.Bucket,
+				Object:   object,
+			})
+			t.ImageName = object
+
+			targets = append(targets, t)
 		} else {
-			http.Error(w, "Unknown upload request type, only aws is supported", http.StatusBadRequest)
+			http.Error(w, "Unknown upload request type, only aws and gcp are supported", http.StatusBadRequest)
 			return
 		}
 	}

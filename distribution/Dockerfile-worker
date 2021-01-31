@@ -12,4 +12,5 @@ RUN mkdir -p "/var/cache/osbuild-composer/"
 RUN mkdir -p "/var/lib/osbuild-composer/"
 COPY --from=builder /opt/app-root/src/go/bin/osbuild-worker /usr/libexec/osbuild-composer/
 
+ENV GOOGLE_APPLICATION_CREDENTIALS=/etc/osbuild-composer/gcp_credentials.json
 ENTRYPOINT ["/usr/libexec/osbuild-composer/osbuild-worker"]
