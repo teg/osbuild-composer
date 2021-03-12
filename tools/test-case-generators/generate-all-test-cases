@@ -59,9 +59,9 @@
     - macOS 11.2.2 (x86_64) and QEMU version 5.1.0
 
     Not tested:
-    - installation of newer 'osbuild-composer' or 'osbuild' packages from the
-      local 'osbuild' repository, which is configured by cloud-init. Not sure
-      how dnf will behave if there are packages for multiple architectures.
+    - installation of newer 'osbuild' packages from the local 'osbuild'
+      repository, which is configured by cloud-init. Not sure how dnf will behave
+      if there are packages for multiple architectures.
 """
 
 
@@ -666,7 +666,7 @@ class TestCaseMatrixGenerator(contextlib.AbstractContextManager):
             runner.run_command_check_call(f"sudo mkdir {guest_osbuild_store_dir}")
 
             # Log installed versions of important RPMs
-            rpm_versions, _, _ = runner.run_command("rpm -q osbuild osbuild-composer")
+            rpm_versions, _, _ = runner.run_command("rpm -q osbuild")
             log.info("Installed packages: %s", " ".join(rpm_versions.split("\n")))
 
             with git.repo.base.Repo() as repo, \
